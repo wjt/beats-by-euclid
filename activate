@@ -1,0 +1,7 @@
+here=$(dirname "$(readlink -f "$0")")
+npm_bin="$here/node_modules/.bin"
+
+if ! echo $PATH | /bin/grep -qE "(^|:)$npm_bin($|:)" ; then
+  export PATH="$npm_bin:$PATH"
+  hash -r 2>/dev/null
+fi
