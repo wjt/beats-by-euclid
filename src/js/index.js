@@ -3,75 +3,113 @@ import Tone from "tone";
 import _nx from "nexusui";
 const nx = window.nx;
 
+import _ from "lodash";
+
 import {Sequence} from "./sequence";
 
 const cellSize = 20;
 
-function comment(text) {
-    var c = nx.add('comment');
+function addRow(parent) {
+    var r = document.createElement('div');
+    r.id = _.uniqueId("row_");
+    r.className = 'row';
+    parent.appendChild(r);
+    return r;
+}
+
+function comment(text, parent) {
+    var c = nx.add('comment', {parent});
+    c.setSize(12);
     c.val.text = text;
     c.draw();
     return c;
 }
 
-function addPattern(k, m, note) {
-    comment('pulses');
+function labelled(text, type, parent) {
+    var r = addRow(parent);
+    comment(text, r);
+    return nx.add('number', {parent: r});
+}
 
-    var n1 =  nx.add('number');
-    n1.set({
-        value: Math.max(0, k)
-    });
-    n1.min = 0;
-    n1.max = m;
-    n1.step = 1;
-    n1.decimalPlaces = 0;
+class Pattern {
+    constructor(k, length, notes, i, parent) {
+        this.$el = document.createElement("div");
+        this.$el.className = 'pattern';
+        document.body.appendChild(this.$el);
 
-    comment('bar length');
-    var n2 = nx.add('number');
-    n2.set({
-        value: Math.min(m, 64),
-    })
-    n2.min = 0;
-    n2.max = 64;
-    n2.step = 1;
-    n2.decimalPlaces = 0;
+        var r = addRow(this.$el);
 
-    n1.on('*', ({value}) => {
-        console.log("n1");
-        update();
-    })
+        var n1 = this.n1 = labelled("pulses", "number", r);
+        n1.set({
+            value: Math.max(0, k)
+        });
+        n1.min = 0;
+        n1.max = length;
+        n1.step = 1;
+        n1.decimalPlaces = 0;
 
-    n2.on('*', ({value}) => {
-        console.log("n2");
-        n1.max = value;
+        var n2 = this.n2 = labelled("bar length", "number", r);
+        n2.set({
+            value: Math.min(length, 64),
+        })
+        n2.min = 0;
+        n2.max = 64;
+        n2.step = 1;
+        n2.decimalPlaces = 0;
 
-        if (value < n1.val.value) {
-            n1.set({
-                value
-            });
-        } else {
-            update();
-        }
-    });
+        n1.on('*', ({value}) => {
+            console.log("n1");
+            this._update();
+        })
 
-    var pattern = {};
-    var mx = nx.add('matrix');
-    var loop = [];
-    update();
+        n2.on('*', ({value}) => {
+            console.log("n2");
+            n1.max = value;
 
-    function update() {
-        var k = n1.val.value;
-        var m = n2.val.value - k;
+            if (value < n1.val.value) {
+                n1.set({
+                    value
+                });
+            } else {
+                this._update();
+            }
+        });
 
-        if (pattern.k !== k || pattern.m !== m) {
-            pattern = {k, m};
+        // TODO: just use a real select, come on
+        var s1 = nx.add('select', {parent: r});
+        s1.choices = _.pluck(notes, 'label');
+        s1.init();
 
-            const seqs = new Sequence(pattern).evaluate();
+        this._notes = notes;
+        this._index = i;
+        s1.canvas.selectedIndex = i;
+        s1.on('*', () => {
+            this._index = s1.canvas.selectedIndex
+        });
+
+        this.mx = nx.add('matrix', {parent: this.$el});
+
+        this.pattern = {};
+        this.loop = [];
+
+        this._update();
+    }
+
+    _update() {
+        var k = this.n1.val.value;
+        var m = this.n2.val.value - k;
+        var pattern = {k, m};
+
+        if (!_.isEqual(pattern, this.pattern)) {
+            this.pattern = pattern;
+
+            const seqs = new Sequence(this.pattern).evaluate();
             let rows = seqs.length;
             let cols = seqs[0].length;
 
-            loop.splice(0, loop.length, ...seqs[seqs.length - 1].toBools());
+            this.loop = seqs[seqs.length - 1].toBools();
 
+            var mx = this.mx;
             mx.row = rows;
             mx.col = cols;
             mx.init();
@@ -86,37 +124,139 @@ function addPattern(k, m, note) {
         }
     }
 
-    return loop;
+    tick(n) {
+        var i = n % this.loop.length;
+        this.mx.jumpToCol(i);
+        return this.loop[i];
+    }
+
+    get index() {
+        return this._index;
+    }
+
+    get note() {
+        return this._notes[this._index].note;
+    }
+
+    get instrument() {
+        return this._notes[this._index].instrument;
+    }
+
+    get length() {
+        return this.pattern.k + this.pattern.m;
+    }
 }
 
-window.nx.onload = function onload() {
-    var synth = new Tone.PolySynth(6, Tone.MonoSynth).toMaster();
+function getSynths() {
+    const drumSampleURLs = {
+        Kick: "/samples/Kick.mp3",
+        Snare: "/samples/Sample 1.mp3",
+        Cymbal: {
+            Crash: "/samples/Crash Cymbal.mp3",
+            Ride: "/samples/Ride Cymbal.mp3",
+        },
+        HH: {
+            Closed: "/samples/Closed Hat.mp3",
+            Mid: "/samples/Mid Hat.mp3",
+            Open1: "/samples/Open Hat 1.mp3",
+            Open2: "/samples/Open Hat 2.mp3",
+        },
+        Tom: {
+            High: "/samples/Sample 2.mp3",
+            Mid: "/samples/Mid Tom.mp3",
+            Floor: "/samples/Floor Tom.mp3",
+        },
+    }
+    const drumSampleNames = Object.keys(Tone.Sampler.prototype._flattenUrls(drumSampleURLs));
+    const synthNoteNames = ["Eb3", "G3", "Bb3", "C4"];
+    const notes = [].concat(
+        drumSampleNames.map(note => ({instrument: 'kit', note})),
+        synthNoteNames.map(note => ({instrument: 'bloop', note}))
+    );
+    notes.forEach(x => {
+        x.label = `${x.instrument} - ${x.note}`;
+    });
 
-    var p1 = addPattern(5, 16);
-    var p2 = addPattern(7, 15);
+    var bloop = new Tone.PolySynth(synthNoteNames.length, Tone.MonoSynth, {
+        "oscillator" : {
+            "partials": [7, 3, 2, 1],
+            "type": "custom",
+            "frequency": "C#4",
+            "volume": -8,
+        },
+        "envelope" : {
+            "attack" : 0.11,
+            "decay" : 0.21,
+            "sustain" : 0.59,
+            "release" : 1.2,
+        }
+    }).toMaster();
 
-    var n = 0;
-    Tone.Transport.scheduleRepeat((time) => {
-        var chord = [];
-        if (p1[n % p1.length]) {
-            chord.push("C4");
-        }
-        if (p2[n % p2.length]) {
-            chord.push("G4");
-        }
-        if (chord.length) {
-            synth.triggerAttackRelease(chord, "16n")
-        }
+    var kit = new Tone.PolySynth(drumSampleNames.length, Tone.Sampler, drumSampleURLs, {
+        volume: -10,
+    }).toMaster();
 
-        n += 1;
-    }, "8n");
+    var synths = {bloop, kit};
+    return {notes, synths};
 };
 
-window.addEventListener('load', () => {
-    Tone.Transport.start();
-}, false);
+const {notes, synths} = getSynths();
 
-window.Euclid = {
-    Sequence,
-    nx,
+window.nx.onload = function onload() {
+    Tone.Buffer.on('load', () => {
+        Tone.Transport.bpm.value = 144;
+
+        var r = addRow(document.body);
+        var playPause = nx.add('toggle', {parent: r})
+
+        var bpm = labelled("BPM", "number", r);
+        bpm.min = 80;
+        bpm.max = 200;
+        bpm.step = 1;
+        bpm.decimalPlaces = 0;
+        bpm.set({
+            value: Tone.Transport.bpm.value
+        });
+        bpm.on('*', () => {
+            Tone.Transport.bpm.value = bpm.val.value;
+        });
+
+        var addPattern = document.createElement('button');
+        addPattern.innerHTML = 'Add pattern';
+        r.appendChild(addPattern);
+
+        var patterns = [
+            new Pattern(5, 16, notes, 0),
+            new Pattern(7, 16, notes, 4),
+        ];
+
+        addPattern.addEventListener('click', () => {
+            var length = _.max(_.pluck(patterns, 'length'));
+            var k = _.random(1, length);
+            var i = _.random(0, notes.length - 1);
+            patterns.push(new Pattern(k, length, notes, i));
+        }, false);
+
+        var n = 0;
+        var tick = (time) => {
+            patterns.forEach(p => {
+                if (p.tick(n)) {
+                    var s = synths[p.instrument];
+                    s.triggerAttackRelease(p.note, "8n", time);
+                }
+            });
+
+            n += 1;
+        };
+
+        var eventId;
+        playPause.on('*', ({value}) => {
+            if (value) {
+                eventId = Tone.Transport.scheduleRepeat(tick, "8n");
+            } else {
+                Tone.Transport.clear(eventId);
+            }
+        });
+        Tone.Transport.start();
+    });
 };

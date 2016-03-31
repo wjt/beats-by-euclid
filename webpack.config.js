@@ -7,6 +7,7 @@ var CopyWebpackPlugin = require('copy-webpack-plugin');
 
 var dir_js = path.resolve(__dirname, 'src/js');
 var dir_html = path.resolve(__dirname, 'src/html');
+var dir_samples = path.resolve(__dirname, 'src/samples');
 var dir_build = path.resolve(__dirname, 'build');
 
 module.exports = {
@@ -37,7 +38,8 @@ module.exports = {
     plugins: [
         // Simply copies the files over
         new CopyWebpackPlugin([
-         { from: dir_html } // to: output.path
+            { from: dir_html }, // to: output.path,
+            { from: dir_samples, to: "samples" }
         ]),
 
         // Avoid publishing files when compilation fails
