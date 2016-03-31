@@ -255,8 +255,6 @@ const {notes, synths} = getSynths();
 
 window.nx.onload = function onload() {
     Tone.Buffer.on('load', () => {
-        Tone.Transport.bpm.value = 144;
-
         var r = addRow(document.body);
         var playPauseButton = nx.add('toggle', {parent: r})
         function setPlaying(playing) {
@@ -270,12 +268,10 @@ window.nx.onload = function onload() {
         bpm.max = 200;
         bpm.step = 1;
         bpm.decimalPlaces = 0;
-        bpm.set({
-            value: Tone.Transport.bpm.value
-        });
         bpm.on('*', () => {
             Tone.Transport.bpm.value = bpm.val.value;
         });
+        bpm.set({value: 152}, true);
 
         var addPatternButton = document.createElement('button');
         addPatternButton.innerHTML = 'Add pattern';
@@ -317,14 +313,16 @@ window.nx.onload = function onload() {
         }, false);
         r.appendChild(clearPatternsButton);
 
-        var n = 0;
+        var n = -1;
         var tick = (time) => {
-            patterns.forEach(p => {
-                if (p.tick(n)) {
-                    var s = synths[p.instrument];
-                    s.triggerAttackRelease(p.note, "8n", time);
-                }
-            });
+            if (n >= 0) {
+                patterns.forEach(p => {
+                    if (n >= 0 && p.tick(n)) {
+                        var s = synths[p.instrument];
+                        s.triggerAttackRelease(p.note, "8n", time);
+                    }
+                });
+            }
 
             n += 1;
         };
@@ -342,7 +340,7 @@ window.nx.onload = function onload() {
 
         appendPattern(5, 16, 0);
         appendPattern(3, 16, 1);
-        appendPattern(8, 16, 4);
+        appendPattern(7, 16, 4);
         setPlaying(true);
     });
 };
