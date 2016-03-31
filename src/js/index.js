@@ -31,6 +31,19 @@ function labelled(text, type, parent) {
     return nx.add('number', {parent: r});
 }
 
+function intInRange(number, {value, min, max}) {
+    number.set({value});
+    number.min = min;
+    number.max = max;
+    number.step = 1;
+    number.decimalPlaces = 0;
+    return number
+}
+
+function rotate(l, k) {
+    return l.slice(k, l.length).concat(l.slice(0, k));
+}
+
 class Pattern {
     constructor(k, length, notes, i, parent) {
         this.$el = document.createElement("div");
@@ -39,46 +52,61 @@ class Pattern {
 
         var r = addRow(this.$el);
 
-        var n1 = this.n1 = labelled("pulses", "number", r);
-        n1.set({
-            value: Math.max(0, k)
+        this._pulses = labelled("pulses", "number", r);
+        intInRange(this._pulses, {
+            value: Math.max(0, k),
+            min: 0,
+            max: length,
         });
-        n1.min = 0;
-        n1.max = length;
-        n1.step = 1;
-        n1.decimalPlaces = 0;
 
-        var n2 = this.n2 = labelled("bar length", "number", r);
-        n2.set({
+        this._length = labelled("bar length", "number", r);
+        intInRange(this._length, {
             value: Math.min(length, 64),
-        })
-        n2.min = 0;
-        n2.max = 64;
-        n2.step = 1;
-        n2.decimalPlaces = 0;
+            min: 0,
+            max: 64,
+        });
 
-        n1.on('*', ({value}) => {
-            console.log("n1");
+        this._offset = labelled("rotate", "number", r);
+        intInRange(this._offset, {
+            value: 0,
+            min: 0,
+            max: length - 1,
+        });
+
+        this._pulses.on('*', ({value}) => {
+            console.log("_pulses");
             this._update();
         })
 
-        n2.on('*', ({value}) => {
-            console.log("n2");
-            n1.max = value;
+        this._length.on('*', ({value}) => {
+            console.log("_length");
+            this._pulses.max = value;
 
-            if (value < n1.val.value) {
-                n1.set({
-                    value
-                });
-            } else {
-                this._update();
+            if (value < this._pulses.val.value) {
+                this._pulses.set({value});
             }
+
+            if (value <= this._offset.val.value) {
+                this._offset.set({value: 0});
+            }
+
+            this._update();
+        });
+
+        this._offset.on('*', ({value}) => {
+            console.log("_offset", value);
+            this._update();
         });
 
         // TODO: just use a real select, come on
         var s1 = nx.add('select', {parent: r});
         s1.choices = _.pluck(notes, 'label');
         s1.init();
+
+        var remove = document.createElement('button');
+        remove.innerHTML = '×';
+        remove.addEventListener('click', () => this.remove(), false);
+        r.appendChild(remove);
 
         this._notes = notes;
         this._index = i;
@@ -95,20 +123,29 @@ class Pattern {
         this._update();
     }
 
+    remove() {
+        this.$el.parentNode && this.$el.parentNode.removeChild(this.$el);
+        this.onremove && this.onremove();
+    }
+
     _update() {
-        var k = this.n1.val.value;
-        var m = this.n2.val.value - k;
-        var pattern = {k, m};
+        console.log("update");
+        var k = this._pulses.val.value;
+        var length = this._length.val.value;
+        var m = length - k;
+        var offset = this._offset.val.value;
+        var pattern = {k, m, offset};
 
         if (!_.isEqual(pattern, this.pattern)) {
+            console.log(pattern);
             this.pattern = pattern;
 
-            const seqs = new Sequence(this.pattern).evaluate();
+            const seqs = new Sequence(this.pattern).evaluate()
+                .map(x => rotate(x.toBools(), offset));
             let rows = seqs.length;
             let cols = seqs[0].length;
 
-            this.loop = seqs[seqs.length - 1].toBools();
-
+            this.loop = seqs[seqs.length - 1];
             var mx = this.mx;
             mx.row = rows;
             mx.col = cols;
@@ -116,8 +153,8 @@ class Pattern {
             mx.resize(cols * cellSize, rows * cellSize);
 
             seqs.forEach((seq, row) => {
-                seq.toBools().forEach((c, col) => {
-                    mx.matrix[col][row] = c ? 1 : 0;
+                seq.forEach((c, col) => {
+                    mx.matrix[col][row] = +c;
                 });
             })
             mx.draw();
@@ -140,6 +177,10 @@ class Pattern {
 
     get instrument() {
         return this._notes[this._index].instrument;
+    }
+
+    get pulses() {
+        return this.pattern.k;
     }
 
     get length() {
@@ -169,12 +210,13 @@ function getSynths() {
     }
     const drumSampleNames = Object.keys(Tone.Sampler.prototype._flattenUrls(drumSampleURLs));
     const synthNoteNames = ["Eb3", "G3", "Bb3", "C4"];
-    const notes = [].concat(
+    const notes = _.flatten([
         drumSampleNames.map(note => ({instrument: 'kit', note})),
-        synthNoteNames.map(note => ({instrument: 'bloop', note}))
-    );
+        // synthNoteNames.map(note => ({instrument: 'bloop', note}))
+    ]);
+
     notes.forEach(x => {
-        x.label = `${x.instrument} - ${x.note}`;
+        x.label = x.note; // `${x.instrument} - ${x.note}`;
     });
 
     var bloop = new Tone.PolySynth(synthNoteNames.length, Tone.MonoSynth, {
@@ -200,6 +242,15 @@ function getSynths() {
     return {notes, synths};
 };
 
+function pickFresh(start, end, avoid=[]) {
+    var xs = _.range(start, end).filter(i => avoid.indexOf(i) === -1);
+    if (xs.length) {
+        return _.sample(xs);
+    } else {
+        return _.random(start, end - 1);
+    }
+}
+
 const {notes, synths} = getSynths();
 
 window.nx.onload = function onload() {
@@ -207,7 +258,12 @@ window.nx.onload = function onload() {
         Tone.Transport.bpm.value = 144;
 
         var r = addRow(document.body);
-        var playPause = nx.add('toggle', {parent: r})
+        var playPauseButton = nx.add('toggle', {parent: r})
+        function setPlaying(playing) {
+            if (+playing !== playPauseButton.val.value) {
+                playPauseButton.set({value: +playing}, true);
+            }
+        }
 
         var bpm = labelled("BPM", "number", r);
         bpm.min = 80;
@@ -221,21 +277,45 @@ window.nx.onload = function onload() {
             Tone.Transport.bpm.value = bpm.val.value;
         });
 
-        var addPattern = document.createElement('button');
-        addPattern.innerHTML = 'Add pattern';
-        r.appendChild(addPattern);
+        var addPatternButton = document.createElement('button');
+        addPatternButton.innerHTML = 'Add pattern';
+        r.appendChild(addPatternButton);
 
-        var patterns = [
-            new Pattern(5, 16, notes, 0),
-            new Pattern(7, 16, notes, 4),
-        ];
+        var patterns = [];
 
-        addPattern.addEventListener('click', () => {
-            var length = _.max(_.pluck(patterns, 'length'));
-            var k = _.random(1, length);
-            var i = _.random(0, notes.length - 1);
-            patterns.push(new Pattern(k, length, notes, i));
+        function appendPattern(k, length, i) {
+            var p = new Pattern(k, length, notes, i);
+            p.onremove = () => {
+                patterns.splice(patterns.indexOf(p), 1);
+                patterns.length || setPlaying(false);
+            };
+            patterns.push(p);
+        }
+
+        addPatternButton.addEventListener('click', () => {
+            var k = 5;
+            var length = 16;
+            var i = 0;
+            if (patterns.length) {
+                length = _.max(_.pluck(patterns, 'length'));
+                // even better: pick something coprime with as many as possible
+                k = pickFresh(1, Math.ceil(length * 2 / 3),
+                    _.pluck(patterns, 'pulses'));
+                i = pickFresh(0, notes.length, _.pluck(patterns, 'index'));
+            } else {
+                setPlaying(true);
+            }
+            appendPattern(k, length, i);
         }, false);
+
+        var clearPatternsButton = document.createElement('button');
+        clearPatternsButton.innerHTML = 'Clear patterns';
+        clearPatternsButton.addEventListener('click', () => {
+            patterns.slice().forEach(p => p.remove());
+            setPlaying(false);
+            n = 0;
+        }, false);
+        r.appendChild(clearPatternsButton);
 
         var n = 0;
         var tick = (time) => {
@@ -250,13 +330,19 @@ window.nx.onload = function onload() {
         };
 
         var eventId;
-        playPause.on('*', ({value}) => {
-            if (value) {
+        playPauseButton.on('*', ({value}) => {
+            if (value && eventId === undefined) {
                 eventId = Tone.Transport.scheduleRepeat(tick, "8n");
-            } else {
+            } else if (eventId !== undefined){
                 Tone.Transport.clear(eventId);
+                eventId = undefined;
             }
         });
         Tone.Transport.start();
+
+        appendPattern(5, 16, 0);
+        appendPattern(3, 16, 1);
+        appendPattern(8, 16, 4);
+        setPlaying(true);
     });
 };
