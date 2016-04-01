@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Euclidean rhythm</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="./reveal.js/css/reveal.css">
+  <style type="text/css">code{white-space: pre;}</style>
+  <link rel="stylesheet" href="./reveal.js/css/theme/night.css" id="theme">
+  <!-- Printing and PDF exports -->
+  <script>
+    var link = document.createElement( 'link' );
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = window.location.search.match( /print-pdf/gi ) ? './reveal.js/css/print/pdf.css' : './reveal.js/css/print/paper.css';
+    document.getElementsByTagName( 'head' )[0].appendChild( link );
+  </script>
+  <!--[if lt IE 9]>
+  <script src="reveal.js/lib/js/html5shiv.js"></script>
+  <![endif]-->
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+<section>
+  <h1 class="title">Euclidean rhythm</h1>
+  <aside class="notes">
+      Hi everyone.
+      Brief: no day job. Accidentally computers.
+      I'm going to tell you some facts about rhythm,
+      partical accelerators, and a Greek mathematician.
+      You can probably guess which one.
+  </aside>
+
+</section>
+
+<section id="section" class="slide level" data-background="img/Rich_-Disasterpeace-_Vreeland,_cropped.jpg"
+    data-background-size="contain">
+    <section>
+        <aside class="notes">
+            Does anybody know who this is?
+        </aside>
+    </section>
+    <section>
+        <h1>Rich “Disasterpeace” Vreeland</h1>
+        <footer><cite>
+            <a href="https://commons.wikimedia.org/wiki/File:Rich_%22Disasterpeace%22_Vreeland,_cropped.jpg">– Wikimedia Commons</a>
+        </cite></footer>
+        <aside class="notes">
+            You may know him as the composer of the Fez soundtrack.
+            Posted a video linking to this paper.
+        </aside>
+    </section>
+</section>
+
+<section>
+    <section>
+        <h1>Greatest Common Divisor</h1>
+        <aside class="notes">
+            Just in case you don't remember, the greatest common divisor of two
+            integers is the largest integer which divides them both both.
+        </aside>
+    </section>
+    <section>
+        <p>GCD(8, 12) = 4</p>
+        <p>GCD(5, 8) = 1</p>
+    </section>
+</section>
+
+<section data-background="img/Euklid.jpg" data-background-size="contain">
+    <section></section>
+    <section>
+        <footer><cite>
+            <a href="https://en.wikipedia.org/wiki/File:Euklid.jpg">– Wikimedia Commons</a>
+        </cite></footer>
+        <aside class="notes">
+            The artist titled this "Euclid of Megara" but it's actually meant to
+            be of Euclid of Alexandria. That's who we're interested in.
+        </aside>
+    </section>
+</section>
+
+<section>
+    <section>
+        <h1>Euclid's algorithm</h1>
+    </section>
+    <section>
+        <pre><code data-trim>
+function euclid(m, k) {
+    if (k == 0) {
+        return m;
+    } else {
+        return euclid(k, m % k);
+    }
+}</code></pre>
+        <aside class="notes">
+            Despite 300BC, Euclid actually specified the algorithm in JavaScript!
+        </aside>
+    </section>
+    <section>
+        <pre><code data-trim>
+function euclid(m, k) {
+    if (k == 0) {
+        return m;
+    } else {
+        return euclid(k, m % k);
+    }
+}</code></pre>
+        <pre><code>
+   euclid(8, 5)     // 8 = 1 × 5 + 3
+== euclid(5, 3)     // 5 = 1 × 3 + 2
+== euclid(3, 2)     // 3 = 1 × 2 + 1
+== euclid(2, 1)     // 2 = 1 × 1 + 0
+== euclid(1, 0)
+== 1</code></pre>
+    </section>
+</section>
+<section  data-background='img/98057962_6853535ac3_o.jpg' data-background-size='contain'>
+    <section>
+    </section>
+    <section>
+        <h1>Spallation Neutron Source</h1>
+        <footer><cite><a href="https://www.flickr.com/photos/benshepherd/98057962">
+            – Ben Shepherd
+        </a></cite></footer>
+        <aside class="notes">
+            Key point: there are n time slices, and you want to deliver k pulses
+            spaced as evenly as possible
+        </aside>
+    </section>
+    <section>
+        <h1>E. Bjorklund</h1>
+    </section>
+</section>
+<section id='pulse'>
+    <section id='pulse-1'>
+        <h3>5 pulses, 13 timeslots</h3>
+    </section>
+    <section id='pulse-2'>
+        <h3>5 pulses, 8 rests</h3>
+        <span class='fragment' data-fragment-index=1><pre><code data-noescape>■   ■   ■   ■  ■    □ □ □ □ □ □ □ □  <span class='fragment' data-fragment-index=5> ← euclid(8, 5) </span></code></pre></span>
+        <span class='fragment' data-fragment-index=2><pre><code data-noescape>■□  ■□  ■□  ■□ ■□             □ □ □  <span class='fragment' data-fragment-index=5> ← 8 = 1 × 5 + 3</span></code></pre></span>
+        <span class='fragment' data-fragment-index=3><pre><code data-noescape>■□□ ■□□ ■□□                   ■□ ■□  <span class='fragment' data-fragment-index=5> ← 5 = 1 × 3 + 2</span></code></pre></span>
+        <span class='fragment' data-fragment-index=4><pre><code data-noescape>■□□■□   ■□□■□                   ■□□  <span class='fragment' data-fragment-index=5> ← 3 = 1 × 2 + 1</span></code></pre></span>
+    </section>
+</section>
+<section  data-background='img/Godfried-portrait-pioneer.jpg' data-background-size='contain'>
+    <section>
+    </section>
+    <section>
+        <h1>Godfried T. Toussaint</h1>
+        <footer><cite><a href="https://en.wikipedia.org/wiki/File:Godfried-portrait-pioneer.jpg">
+            – Wikipedia
+        </a></cite></footer>
+        <aside class="notes">
+            Self-portrait. CompSci. Much publication but today we are interested in his
+            stuff about rhythm.
+        </aside>
+    </section>
+</section>
+<section data-background='img/15880005.jpg' data-background-size='contain'>
+</section>
+<section>
+    <section>
+        <h3>The <i>Euclidean</i> Algorithm Generates Traditional Musical Rhythms</h3>
+        <aside class="notes">
+            Just treat the pulses as beats, and the gaps as rests.
+            So there's this whole family of rhythms defined by pairs of integers.
+        </aside>
+    </section>
+    <section>
+        <h1>E(5, 13): ■□□■□■□□■□■□□</h1>
+        <aside class="notes">So this is what we saw a minute ago. 13-beat bars are not common.</aside>
+    </section>
+</section>
+<section>
+    <section data-background="img/Flag_of_Cuba.svg" data-background-size='contain'>
+        <aside class="notes">Cuba</aside>
+    </section>
+    <section>
+        <h1>E(3, 8): ■□□■□□■□</h1>
+        <h2>tresillo</h2>
+    </section>
+    <section>
+        <h1>E(5, 8): ■□■■□■■□</h1>
+        <h2>cinquillo</h2>
+    </section>
+</section>
+<section data-background="img/Flag_of_Bulgaria.svg.png" data-background-size='contain'>
+    <section>
+        <aside class="notes">Bulgaria</aside>
+    </section>
+    <section>
+        <h3>E(4, 7): ■□■□■□■</h3>
+    </section>
+    <section>
+        <h3>Rotate by 4 beats: ■□■■□■□</h3>
+    </section>
+</section>
+<section data-background-video="img/RS_FSS.mkv">
+    <h2>Free Software Song</h2>
+</section>
+<section>
+    <section>
+        <h1>Demos</h1>
+    </section>
+</section>
+<section>
+    <h1>Happy birthday!</h1>
+</section>
+</section>
+    </div>
+  </div>
+
+  <script src="reveal.js/lib/js/head.min.js"></script>
+  <script src="reveal.js/js/reveal.js"></script>
+
+  <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true },
+          { src: 'reveal.js/plugin/notes/notes.js', async: true },
+          { src: 'reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+
+        ]
+      });
+    </script>
+    </body>
+</html>

@@ -4,6 +4,7 @@ import _nx from "nexusui";
 const nx = window.nx;
 
 import _ from "lodash";
+import queryString from "query-string";
 
 import {Sequence} from "./sequence";
 
@@ -45,7 +46,19 @@ function rotate(l, k) {
 }
 
 class Pattern {
-    constructor(k, length, notes, i, parent) {
+    static parse(spec) {
+        var [pulses, length, offset, instrument, note] = spec.split('_');
+        pulses = Number(pulses);
+        length = Number(length);
+        offset = Number(offset);
+        return {pulses, length, offset, instrument, note};
+    }
+
+    get spec() {
+        return [this.pulses, this.length, this.offset, this.instrument, this.note].join('_');
+    }
+
+    constructor({pulses, length, instrument, note, offset = 0}, notes) {
         this.$el = document.createElement("div");
         this.$el.className = 'pattern';
         document.body.appendChild(this.$el);
@@ -54,7 +67,7 @@ class Pattern {
 
         this._pulses = labelled("pulses", "number", r);
         intInRange(this._pulses, {
-            value: Math.max(0, k),
+            value: Math.max(0, pulses),
             min: 0,
             max: length,
         });
@@ -68,7 +81,7 @@ class Pattern {
 
         this._offset = labelled("rotate", "number", r);
         intInRange(this._offset, {
-            value: 0,
+            value: Math.min(offset, length - 1),
             min: 0,
             max: length - 1,
         });
@@ -109,10 +122,15 @@ class Pattern {
         r.appendChild(remove);
 
         this._notes = notes;
+        var i = _.findIndex(notes, {instrument, note});
+        if (i === -1) {
+            i = 0;
+        }
         this._index = i;
         s1.canvas.selectedIndex = i;
         s1.on('*', () => {
             this._index = s1.canvas.selectedIndex
+            this._changed();
         });
 
         this.mx = nx.add('matrix', {parent: this.$el});
@@ -126,6 +144,10 @@ class Pattern {
     remove() {
         this.$el.parentNode && this.$el.parentNode.removeChild(this.$el);
         this.onremove && this.onremove();
+    }
+
+    _changed() {
+        this.onchanged && this.onchanged();
     }
 
     _update() {
@@ -158,6 +180,7 @@ class Pattern {
                 });
             })
             mx.draw();
+            this._changed();
         }
     }
 
@@ -185,6 +208,10 @@ class Pattern {
 
     get length() {
         return this.pattern.k + this.pattern.m;
+    }
+
+    get offset() {
+        return this.pattern.offset;
     }
 }
 
@@ -253,6 +280,40 @@ function pickFresh(start, end, avoid=[]) {
 
 const {notes, synths} = getSynths();
 
+const canned = [
+    {
+        title: 'Bulgarian Folk Dance',
+        patterns: [
+            [3, 7]
+        ]
+    }
+]
+
+const State = {
+    push(patterns) {
+        // Don't actually use state
+        window.history.pushState({}, '', '?' + State.stringify(patterns));
+    },
+
+    parse(search=window.location.search) {
+        var q = queryString.parse(search);
+
+        if (_.isString(q.p)) {
+            q.p = [q.p];
+        }
+
+        return _.map(q.p, Pattern.parse);
+    },
+
+    stringify(patterns) {
+        return queryString.stringify({
+            p: _.map(patterns, 'spec')
+        });
+    },
+};
+
+window.State = State;
+
 window.nx.onload = function onload() {
     Tone.Buffer.on('load', () => {
         var r = addRow(document.body);
@@ -279,29 +340,33 @@ window.nx.onload = function onload() {
 
         var patterns = [];
 
-        function appendPattern(k, length, i) {
-            var p = new Pattern(k, length, notes, i);
+        function appendPattern(spec) {
+            var p = new Pattern(spec, notes);
+            p.onchanged = () => {
+                State.push(patterns);
+            };
             p.onremove = () => {
                 patterns.splice(patterns.indexOf(p), 1);
                 patterns.length || setPlaying(false);
+                State.push(patterns);
             };
             patterns.push(p);
+            State.push(patterns);
         }
 
         addPatternButton.addEventListener('click', () => {
-            var k = 5;
+            var pulses = 5;
             var length = 16;
             var i = 0;
             if (patterns.length) {
                 length = _.max(_.pluck(patterns, 'length'));
                 // even better: pick something coprime with as many as possible
-                k = pickFresh(1, Math.ceil(length * 2 / 3),
+                pulses = pickFresh(1, Math.ceil(length * 2 / 3),
                     _.pluck(patterns, 'pulses'));
                 i = pickFresh(0, notes.length, _.pluck(patterns, 'index'));
-            } else {
-                setPlaying(true);
             }
-            appendPattern(k, length, i);
+            var {note, instrument} = notes[i];
+            appendPattern({pulses, length, note, instrument});
         }, false);
 
         var clearPatternsButton = document.createElement('button');
@@ -338,9 +403,8 @@ window.nx.onload = function onload() {
         });
         Tone.Transport.start();
 
-        appendPattern(5, 16, 0);
-        appendPattern(3, 16, 1);
-        appendPattern(7, 16, 4);
-        setPlaying(true);
+        // appendPattern(5, 16, 0);
+        // appendPattern(3, 16, 1);
+        // appendPattern(7, 16, 4);
     });
 };

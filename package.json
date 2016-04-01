@@ -8,7 +8,8 @@
     "extend": "~3.0.0",
     "nexusui": "~1.0.8",
     "npm": "^3.8.2",
-    "tone": "~0.6.1"
+    "tone": "~0.6.1",
+    "query-string": "~4.1.0"
   },
   "devDependencies": {
     "babel-core": "^6.7.2",
