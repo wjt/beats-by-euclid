@@ -12,10 +12,9 @@ var dir_build = path.resolve(__dirname, 'build');
 
 module.exports = {
     entry: {
-        // TODO: work out how to share the common code between these two(?)
         euclid: path.resolve(dir_js, 'index.js'),
 
-        vendor: ["tone", "nexusui"]
+        vendor: ["tone", "nexusui", "lodash", "query-string"]
     },
     output: {
         path: dir_build,
