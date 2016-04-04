@@ -22,7 +22,8 @@
   "scripts": {
     "build": "webpack",
     "watch": "webpack --watch",
-    "start": "webpack-dev-server --hot --inline"
+    "start": "webpack-dev-server --hot --inline",
+    "upload": "webpack && rsync -a --delete iracon build && rsync -a --delete build/ polymorph.willthompson.co.uk:/srv/willthompson.co.uk/euclid"
   },
   "author": "Will Thompson",
   "license": "ISC"

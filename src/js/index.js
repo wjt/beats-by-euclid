@@ -217,22 +217,22 @@ class Pattern {
 
 function getSynths() {
     const drumSampleURLs = {
-        Kick: "/samples/Kick.mp3",
-        Snare: "/samples/Sample 1.mp3",
+        Kick: "samples/Kick.mp3",
+        Snare: "samples/Sample 1.mp3",
         Cymbal: {
-            Crash: "/samples/Crash Cymbal.mp3",
-            Ride: "/samples/Ride Cymbal.mp3",
+            Crash: "samples/Crash Cymbal.mp3",
+            Ride: "samples/Ride Cymbal.mp3",
         },
         HH: {
-            Closed: "/samples/Closed Hat.mp3",
-            Mid: "/samples/Mid Hat.mp3",
-            Open1: "/samples/Open Hat 1.mp3",
-            Open2: "/samples/Open Hat 2.mp3",
+            Closed: "samples/Closed Hat.mp3",
+            Mid: "samples/Mid Hat.mp3",
+            Open1: "samples/Open Hat 1.mp3",
+            Open2: "samples/Open Hat 2.mp3",
         },
         Tom: {
-            High: "/samples/Sample 2.mp3",
-            Mid: "/samples/Mid Tom.mp3",
-            Floor: "/samples/Floor Tom.mp3",
+            High: "samples/Sample 2.mp3",
+            Mid: "samples/Mid Tom.mp3",
+            Floor: "samples/Floor Tom.mp3",
         },
     }
     const drumSampleNames = Object.keys(Tone.Sampler.prototype._flattenUrls(drumSampleURLs));
