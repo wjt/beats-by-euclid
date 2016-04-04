@@ -4,7 +4,6 @@
   "description": "Euclidean rhythm toy",
   "main": "index.js",
   "dependencies": {
-    "d3": "^3.5.16",
     "extend": "~3.0.0",
     "nexusui": "~1.0.8",
     "npm": "^3.8.2",
