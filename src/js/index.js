@@ -395,6 +395,7 @@ window.nx.onload = function onload() {
         var eventId;
         playPauseButton.on('*', ({value}) => {
             if (value && eventId === undefined) {
+                n = -1;
                 eventId = Tone.Transport.scheduleRepeat(tick, "8n");
             } else if (eventId !== undefined){
                 Tone.Transport.clear(eventId);
