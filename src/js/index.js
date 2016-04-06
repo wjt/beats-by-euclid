@@ -3,6 +3,9 @@ import Tone from "tone";
 import _nx from "nexusui";
 const nx = window.nx;
 
+// work around half-broken touch support in Firefox on Linux
+nx.isTouchDevice = false;
+
 import _ from "lodash";
 import queryString from "query-string";
 
