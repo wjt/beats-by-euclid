@@ -1,6 +1,7 @@
 {
   "name": "mc-euclid",
-  "version": "1.0.0",
+  "version": "0.0.0",
+  "private": true,
   "description": "Euclidean rhythm toy",
   "main": "index.js",
   "dependencies": {
@@ -25,5 +26,5 @@
     "upload": "webpack && rsync -a --delete iracon build && rsync -a --delete build/ polymorph.willthompson.co.uk:/srv/willthompson.co.uk/euclid"
   },
   "author": "Will Thompson",
-  "license": "ISC"
+  "license": "MIT"
 }
